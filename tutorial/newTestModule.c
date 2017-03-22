@@ -4,6 +4,10 @@
 #include<linux/cdev.h>
 #include<linux/semaphore.h>
 #include<linux/uaccess.h>
+#include<linux/init.h>
+
+MODULE_LICENSE("GPL"); // so that kernel not tainted
+
 
 struct fake_device 
 {
@@ -57,7 +61,7 @@ struct file_operations fops = {
 	.read = device_read
 };
 
-static int driver_entry(void)
+static int __init driver_entry(void)
 {
 	ret = alloc_chrdev_region(&dev_num,0,1,DEVICE_NAME); //dynamically assigns major
 	if (ret<0) {
@@ -80,7 +84,7 @@ static int driver_entry(void)
 	return 0;
 }
 
-static void driver_exit(void)
+static void __exit driver_exit(void)
 {
 	cdev_del(mcdev);
 	unregister_chrdev_region(dev_num,1);
