@@ -59,7 +59,7 @@ struct file_operations fops = {
 
 static int driver_entry(void)
 {
-	ret = alloc_chrdev_region(&dev_num,0,1,DEVICE_NAME);
+	ret = alloc_chrdev_region(&dev_num,0,1,DEVICE_NAME); //dynamically assigns major
 	if (ret<0) {
 		printk(KERN_ALERT "newTestDevice: failed to allocate major number");
 		return ret;
