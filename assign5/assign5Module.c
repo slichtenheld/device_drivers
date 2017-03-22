@@ -21,6 +21,18 @@ struct custom_struct {
 static dev_t first;
 static unsigned int count = 1;
 
+static int my_open(struct inode *inode, struct file *file)
+{
+	pr_info(" OPENING device: %s:\n\n", MYDEV_NAME);
+	return 0;
+}
+
+static int my_release(struct inode *inode, struct file *file)
+{
+	pr_info(" CLOSING device: %s:\n\n", MYDEV_NAME);
+	return 0;
+}
+
 struct file_operations my_fops = {
 	.owner = THIS_MODULE,
 	//.llseek = my_llseek,
@@ -67,17 +79,7 @@ static void __exit driver_exit(void) {
 module_init(driver_entry);
 module_exit(driver_exit);
 
-static int my_open(struct inode *inode, struct file *file)
-{
-	pr_info(" OPENING device: %s:\n\n", MYDEV_NAME);
-	return 0;
-}
 
-static int my_release(struct inode *inode, struct file *file)
-{
-	pr_info(" CLOSING device: %s:\n\n", MYDEV_NAME);
-	return 0;
-}
 
 // int scull_open(struct inode *inode, struct file *filp)
 // {
