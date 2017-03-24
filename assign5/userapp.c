@@ -9,7 +9,7 @@
 int main() 
 {
 	int i,fd;
-	char ch, write_buf[100], read_buf[100];
+	char ch, write_buf[10], read_buf[10];
 	fd = open(DEVICE, O_RDWR);
 	if(fd == -1)
 	{
@@ -34,8 +34,9 @@ int main()
 				break;
 
 			case 'l':
-				lseek(fd, 100,SEEK_SET);
-				lseek(fd, 100,SEEK_CUR);
+				//lseek(fd, 100,SEEK_SET);
+				//lseek(fd,0,SEEK_SET);
+				// lseek(fd, 100,SEEK_CUR);
 				lseek(fd, 100,SEEK_END);
 				break;
 			default:
