@@ -8,4 +8,5 @@ all:
 	$(MAKE) -C $(KERNEL_DIR) SUBDIRS=$(PWD) modules
 
 clean:
+	$(MAKE) -C $(KERNEL_DIR) SUBDIRS=$(PWD) clean
 	rm -rf *.o *.ko *.mod.* *.symvers *.order *~
