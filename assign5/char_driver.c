@@ -142,9 +142,9 @@ struct file_operations my_fops = {
 static int __init driver_entry(void) {
 	int i;
 	
-	pr_info("Creating %d devices...\n", N);
+	pr_info("Creating %d devices...\n", NUM_DEVICES);
 
-	if (alloc_chrdev_region(&first, 0, N, MYDEV_NAME) < 0) {
+	if (alloc_chrdev_region(&first, 0, NUM_DEVICES, MYDEV_NAME) < 0) {
 		pr_err("mycdrv: failed to allocate character device region\n");
 		return -1;
 	}
@@ -155,7 +155,7 @@ static int __init driver_entry(void) {
 	// }
 
 	// init data structures before cdev init and device creation
-	mycdev_devices = kmalloc(N*sizeof(struct asp_mycdev), GFP_KERNEL); // should check for error
+	mycdev_devices = kmalloc(NUM_DEVICES*sizeof(struct asp_mycdev), GFP_KERNEL); // should check for error
 
 	for (i = 0; i < NUM_DEVICES; i++) {
 		mycdev_devices[i].ramdisk_size = PAGE_SIZE;
@@ -163,10 +163,10 @@ static int __init driver_entry(void) {
 		mycdev_devices[i].devNo = i;
 		sema_init(&mycdev_devices[i].sem,1);
 		cdev_init(&mycdev_devices[i].my_cdev, &my_fops);
-		if (cdev_add(&mycdev_devices[i].my_cdev, MKDEV(MAJOR(first),i), N) < 0) {
+		if (cdev_add(&mycdev_devices[i].my_cdev, MKDEV(MAJOR(first),i), NUM_DEVICES) < 0) {
 			pr_err("cdev_add() failed\n");
 			cdev_del(&mycdev_devices[i].my_cdev);
-			unregister_chrdev_region(first, N);
+			unregister_chrdev_region(first, NUM_DEVICES);
 			kfree(mycdev_devices[i].ramdisk);
 			return -1;
 		}
@@ -208,7 +208,7 @@ static void __exit driver_exit(void) {
 	}
 	//cdev_del(&my_custom_struct.my_cdev);
 	// unregister dev_t
-	unregister_chrdev_region(first, N);
+	unregister_chrdev_region(first, NUM_DEVICES);
 	// free ramdisk
 	for ( i = 0; i < NUM_DEVICES; i++ ) {
 		kfree(mycdev_devices[i].ramdisk);

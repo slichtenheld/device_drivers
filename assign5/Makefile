@@ -1,12 +1,13 @@
-# remove the extension in filename. Canvas expects an extension so it was added.
 
-obj-m := assign5Module.o 
+obj-m := char_driver.o
 
 KERNEL_DIR = /usr/src/linux-headers-$(shell uname -r)
 
 all:
-	$(MAKE) -C $(KERNEL_DIR) SUBDIRS=$(PWD) modules
+	$(MAKE) -C $(KERNEL_DIR) SUBDIRS=$(shell pwd)
+	
+app: 
+	gcc -o userapp userapp.c
 
 clean:
-	$(MAKE) -C $(KERNEL_DIR) SUBDIRS=$(PWD) clean
 	rm -rf *.o *.ko *.mod.* *.symvers *.order *~
