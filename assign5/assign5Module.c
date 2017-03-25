@@ -12,47 +12,52 @@
 #define MYDEV_NAME "ASSIGN5_DEVICE"
 
 
-struct custom_struct {
+struct asp_mycdev {
 	char *ramdisk;
 	size_t ramdisk_size;
 	struct semaphore sem;
 	int devNo;
 	struct cdev my_cdev;
 	// any other field you may want to add
-} my_custom_struct;
+};
 
 static dev_t first;
 static unsigned int N = 3; // for minor numbers
 //static size_t ramdisk_size = (16 * PAGE_SIZE);
 static struct class *my_class;
+static struct asp_mycdev * mycdev_devices;
 
 module_param(N,int,S_IRUGO);
 
-static int my_open(struct inode *inode, struct file *file) {
+static int my_open(struct inode *inode, struct file *filp) {
+	struct asp_mycdev * dev; /* device info */
 	pr_info("OPENING device: %s %d %d\n", MYDEV_NAME, imajor(inode), iminor(inode));
+	
+	dev = container_of(inode->i_cdev, struct asp_mycdev, my_cdev); // coudn't just use iminor?
+	filp->private_data = dev; // for other methods
 	return 0;
 }
 
-static int my_release(struct inode *inode, struct file *file) {
+static int my_release(struct inode *inode, struct file *filp) {
 	pr_info("CLOSING device: %s %d %d\n", MYDEV_NAME, imajor(inode), iminor(inode));
 	return 0;
 }
 
-static ssize_t my_read(struct file *file, char __user *buf, size_t lbuf, loff_t *ppos) {
-	
-	if(!down_interruptible(&my_custom_struct.sem)){
+static ssize_t my_read(struct file *filp, char __user *buf, size_t lbuf, loff_t *ppos) {
+	struct asp_mycdev * dev = filp->private_data;
+	if(!down_interruptible(&dev->sem)){
 		// down
 		int nbytes = 0;
-		if ( (lbuf + *ppos) > my_custom_struct.ramdisk_size) {
+		if ( (lbuf + *ppos) > dev->ramdisk_size) {
 			pr_info ("trying to read past end of device");
 			return 0;
 		}
-		nbytes = lbuf - copy_to_user(buf,my_custom_struct.ramdisk+*ppos,lbuf); // int copy2user(to,from,num bytes 2 copy)
+		nbytes = lbuf - copy_to_user(buf,dev->ramdisk+*ppos,lbuf); // int copy2user(to,from,num bytes 2 copy)
 		*ppos += nbytes;
 		pr_info("    READING device: %s nbytes=%d, pos=%d\n",MYDEV_NAME,nbytes,(int)*ppos);
 		
-		//up
-		up(&my_custom_struct.sem);
+		// up
+		up(&dev->sem);
 		return nbytes;
 	}
 	else {
@@ -61,20 +66,21 @@ static ssize_t my_read(struct file *file, char __user *buf, size_t lbuf, loff_t 
 	}
 }
 
-static ssize_t my_write(struct file *file, const char __user *buf, size_t lbuf, loff_t *ppos) {
-	if(!down_interruptible(&my_custom_struct.sem)){
+static ssize_t my_write(struct file *filp, const char __user *buf, size_t lbuf, loff_t *ppos) {
+	struct asp_mycdev * dev = filp->private_data;
+	if(!down_interruptible(&dev->sem)){
 		// down
 		int nbytes = 0;
-		if ( (lbuf + *ppos) > my_custom_struct.ramdisk_size) {
+		if ( (lbuf + *ppos) > dev->ramdisk_size) {
 			pr_info ("trying to read past end of device");
 			return 0;
 		}
-		nbytes = lbuf - copy_from_user(my_custom_struct.ramdisk+*ppos,buf,lbuf);
+		nbytes = lbuf - copy_from_user(dev->ramdisk+*ppos,buf,lbuf);
 		*ppos += nbytes;
 		pr_info("    WRITING device: %s nbytes=%d, pos=%d\n",MYDEV_NAME,nbytes,(int)*ppos);
 		
 		// up
-		up(&my_custom_struct.sem);
+		up(&dev->sem);
 		return nbytes;
 	}
 	else {
@@ -83,40 +89,44 @@ static ssize_t my_write(struct file *file, const char __user *buf, size_t lbuf, 
 	}
 }
 
-static loff_t my_lseek(struct file *file, loff_t offset, int orig) {
-	if(!down_interruptible(&my_custom_struct.sem)){
+static loff_t my_lseek(struct file *filp, loff_t offset, int orig) {
+	struct asp_mycdev * dev = filp->private_data;
+	if(!down_interruptible(&dev->sem)){
 		char * temp;
 		// down
 		loff_t testpos;
 		switch(orig) {
 			case SEEK_SET: testpos = offset; break; // beginning of file
-			case SEEK_CUR: testpos = file->f_pos + offset; break; // current pos
-			case SEEK_END: testpos = my_custom_struct.ramdisk_size + offset; break; // EOF
+			case SEEK_CUR: testpos = filp->f_pos + offset; break; // current pos
+			case SEEK_END: testpos = dev->ramdisk_size + offset; break; // EOF
 			default: return -EINVAL;
 		}
-		if (testpos >= my_custom_struct.ramdisk_size) { // needs to realloc memory 
-			while (testpos >= my_custom_struct.ramdisk_size) { // increase size until pointer is within bounds
-				my_custom_struct.ramdisk_size += PAGE_SIZE;
+		if (testpos >= dev->ramdisk_size) { // needs to realloc memory 
+			while (testpos >= dev->ramdisk_size) { // increase size until pointer is within bounds
+				dev->ramdisk_size += PAGE_SIZE;
 			}
-			temp = krealloc( my_custom_struct.ramdisk, my_custom_struct.ramdisk_size, GFP_KERNEL );
+			temp = krealloc( dev->ramdisk, dev->ramdisk_size, GFP_KERNEL );
 			if (temp == NULL) pr_info("    SEEKING device: ERROR reallocating memory");
-			else my_custom_struct.ramdisk = temp;
+			else dev->ramdisk = temp;
 
 			pr_info("    SEEKING device: expanding memory");
 		}
 		else if (testpos < 0 ) testpos = 0;
-		file->f_pos = testpos;
+		filp->f_pos = testpos;
 		pr_info("    SEEKING device: %s to pos=%ld", MYDEV_NAME, (long)testpos);
 
 		// up
-		up(&my_custom_struct.sem);
+		up(&dev->sem);
 		return testpos;
 	}
 	else {
 		pr_info("    SEEKING device: %s FAILED\n",MYDEV_NAME);
 		return 0;
 	}
+}
 
+static long my_ioctl(struct file *filp, unsigned int cmd, unsigned long arg){
+	return 1;
 }
 
 struct file_operations my_fops = {
@@ -124,14 +134,14 @@ struct file_operations my_fops = {
 	.llseek = my_lseek,
 	.read = my_read,
 	.write = my_write,
-	//.ioctl = my_ioctl,
+	.unlocked_ioctl = my_ioctl,
 	.open = my_open,
 	.release = my_release,
 };
 
 static int __init driver_entry(void) {
 	int i;
-
+	
 	pr_info("Creating %d devices...\n", N);
 
 	if (alloc_chrdev_region(&first, 0, N, MYDEV_NAME) < 0) {
@@ -145,19 +155,35 @@ static int __init driver_entry(void) {
 	// }
 
 	// init data structures before cdev init and device creation
-	my_custom_struct.ramdisk_size = PAGE_SIZE; 
-	my_custom_struct.ramdisk = kzalloc(my_custom_struct.ramdisk_size, GFP_KERNEL);
-	sema_init(&my_custom_struct.sem,1); //initialize semaphore
+	mycdev_devices = kmalloc(N*sizeof(struct asp_mycdev), GFP_KERNEL); // should check for error
 
-
-	cdev_init(&(my_custom_struct.my_cdev), &my_fops);
-	if (cdev_add(&my_custom_struct.my_cdev, first, N) < 0) {
-		pr_err("cdev_add() failed\n");
-		cdev_del(&my_custom_struct.my_cdev);
-		unregister_chrdev_region(first, N);
-		kfree(my_custom_struct.ramdisk);
-		return -1;
+	for (i = 0; i < N; i++) {
+		mycdev_devices[i].ramdisk_size = PAGE_SIZE;
+		mycdev_devices[i].ramdisk = kzalloc(PAGE_SIZE, GFP_KERNEL);
+		mycdev_devices[i].devNo = i;
+		sema_init(&mycdev_devices[i].sem,1);
+		cdev_init(&mycdev_devices[i].my_cdev, &my_fops);
+		if (cdev_add(&mycdev_devices[i].my_cdev, MKDEV(MAJOR(first),i), N) < 0) {
+			pr_err("cdev_add() failed\n");
+			cdev_del(&mycdev_devices[i].my_cdev);
+			unregister_chrdev_region(first, N);
+			kfree(mycdev_devices[i].ramdisk);
+			return -1;
+		}
 	}
+	//my_custom_struct.ramdisk_size = PAGE_SIZE; 
+	//my_custom_struct.ramdisk = kzalloc(my_custom_struct.ramdisk_size, GFP_KERNEL);
+	//sema_init(&my_custom_struct.sem,1); //initialize semaphore
+
+
+	// cdev_init(&(my_custom_struct.my_cdev), &my_fops);
+	// if (cdev_add(&my_custom_struct.my_cdev, first, N) < 0) {
+	// 	pr_err("cdev_add() failed\n");
+	// 	cdev_del(&my_custom_struct.my_cdev);
+	// 	unregister_chrdev_region(first, N);
+	// 	kfree(my_custom_struct.ramdisk);
+	// 	return -1;
+	// }
 
 	my_class = class_create(THIS_MODULE, "my_class");
 
@@ -177,11 +203,18 @@ static void __exit driver_exit(void) {
 	}
 	class_destroy(my_class);
 	// delete cdev
-	cdev_del(&my_custom_struct.my_cdev);
+	for ( i = 0; i < N; i++ ) {
+		cdev_del(&mycdev_devices[i].my_cdev);
+	}
+	//cdev_del(&my_custom_struct.my_cdev);
 	// unregister dev_t
 	unregister_chrdev_region(first, N);
 	// free ramdisk
-	kfree(my_custom_struct.ramdisk);
+	for ( i = 0; i < N; i++ ) {
+		kfree(mycdev_devices[i].ramdisk);
+	}
+	kfree(mycdev_devices);
+	//kfree(my_custom_struct.ramdisk); // how to delete each ting?
 	// destroy semaphore????
 	//sema_destroy(&my_custom_struct.sem);
 
