@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#define DEVICE "/dev/ASSIGN5_DEVICE1"
+#define DEVICE "/dev/mycdrv1"
 
 int main() 
 {
