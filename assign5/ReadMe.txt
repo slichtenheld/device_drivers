@@ -1,3 +1,10 @@
+Samuel Lichtenheld
+
+All functionality below should work as required
+
+
+
+
 Assignment 5
 
 Instructions on how the module will be tested :
