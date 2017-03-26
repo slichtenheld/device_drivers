@@ -8,9 +8,13 @@
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/device.h>
+#include <linux/string.h>
+
 
 #define MYDEV_NAME "mycdrv"
-
+#define CDRV_IOC_MAGIC 'k'
+//#define ASP_CLEAR_BUFF _IOWR(CDRV_IOC_MAGIC, 1, int)
+#define ASP_CLEAR_BUFF _IO(CDRV_IOC_MAGIC, 1)
 
 struct asp_mycdev {
 	char *ramdisk;
@@ -126,7 +130,33 @@ static loff_t my_lseek(struct file *filp, loff_t offset, int orig) {
 }
 
 static long my_ioctl(struct file *filp, unsigned int cmd, unsigned long arg){
-	return 1;
+	struct asp_mycdev * dev = filp->private_data;
+	if(!down_interruptible(&dev->sem)){
+
+		if (_IOC_TYPE(cmd) != CDRV_IOC_MAGIC) {
+			pr_info("    IOCTL device: invalid magic number\n");
+			return -ENOTTY;
+		}
+
+		switch(cmd) {
+			case ASP_CLEAR_BUFF: 
+				pr_info("    IOCTL device: clearing buffer\n");
+				memset(dev->ramdisk,0,dev->ramdisk_size);
+				break;
+			default:
+				pr_info("    IOCTL device: invalid command\n");
+		}
+
+
+		// up
+		up(&dev->sem);
+		return 0;
+	}
+	else {
+		pr_info("    IOCTL device: %s FAILED\n",MYDEV_NAME);
+		return 0;
+	}
+
 }
 
 struct file_operations my_fops = {
