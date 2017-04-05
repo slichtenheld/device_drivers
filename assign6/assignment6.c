@@ -64,7 +64,7 @@ int e2_release(struct inode *inode, struct file *filp)
         devc->count1--;
         if (devc->count1 == 1)
             wake_up_interruptible(&(devc->queue1));
-			up(&devc->sem2);
+		    up(&devc->sem2);
     }
     else if (devc->mode == MODE2) {
         devc->count2--;
@@ -151,7 +151,7 @@ static long e2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				if (devc->count1 > 1) {
 					while (devc->count1 > 1) {
 						up(&devc->sem1);
-					    wait_event_interruptible(devc->queue1, (devc->count1 == 1));
+					  wait_event_interruptible(devc->queue1, (devc->count1 == 1));
 						down_interruptible(&devc->sem1);
 					}
 				}
