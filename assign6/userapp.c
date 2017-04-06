@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 	
 	
 	while (ch[0]!='q'){
-		printf("\n enter command :");
+		printf("\nenter command :");
 		//scanf("%c", &ch);
 		fgets(ch,sizeof(ch),stdin);
 		switch(ch[0]) {
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 				scanf(" %[^\n]", write_buf);
 				write(fd, write_buf, sizeof(write_buf));
 				printf("Content After write : ");
-				lseek(fd, 0, 0);
+				
 				if (read(fd, read_buf, sizeof(read_buf)) > 0) {
 					printf("%s\n", read_buf);
 				} else {
@@ -65,13 +65,24 @@ int main(int argc, char *argv[]) {
 				scanf("%d", &origin);
 				printf(" \n enter offset :");
 				scanf("%d", &offset);
-				lseek(fd, offset, origin);
+				
 				if (read(fd, read_buf, sizeof(read_buf)) > 0) {
 					printf("\ndevice: %s\n", read_buf);
 				} else {
 					fprintf(stderr, "Reading failed\n");
 				}
 				break;
+
+			case '1':
+				if (ioctl(fd, E2_IOCMODE1, 0) < 0 )
+					printf("ERROR ioctl 1\n");
+				break;
+
+			case '2':
+				if (ioctl(fd, E2_IOCMODE2, 0) < 0 )
+					printf("ERROR ioctl 2\n");
+				break;
+
 
 			case 'o':
 				printf("opening file...\n");
@@ -84,6 +95,7 @@ int main(int argc, char *argv[]) {
 				printf("closing file...\n");
 				close(fd);
 				break;
+
 
 			case 'q':
 				printf("quitting...\n");
