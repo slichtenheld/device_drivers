@@ -23,7 +23,7 @@ void ioct_1(int fd);
 void ioctl_2(int fd);
 
 void * thread1_funct(void* arg){
-	sleep(10);
+	sleep(1);
 	int fd;
 	open_file(&fd);
 	ioctl_2(fd);

@@ -24,7 +24,7 @@ void ioctl_2(int fd);
 
 void * thread1_funct(void* arg){
 	int fd = *(int*)arg;
-	sleep(10);
+	sleep(1);
 	ioct_1(fd);
 	pthread_exit(NULL);
 }
