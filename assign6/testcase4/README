@@ -1,0 +1,19 @@
+Samuel Lichtenheld
+
+This testcase is very similar to testcase 1
+except that it involves multiple processes/
+threads. In this scenario, 2 threads are 
+sharing the same opened device. However, one
+decides to open another device, while the other
+decides to switch to mode 1. This causes a 
+deadlock due to: 
+
+	if (devc->count1 > 1) {
+		while (devc->count1 > 1) {
+			up(&devc->sem1);
+			wait_event_interruptible(devc->queue2, (devc->count1 == 1));
+			down_interruptible(&devc->sem1);
+		}
+	}
+
+located in the e2_ioctl function. 

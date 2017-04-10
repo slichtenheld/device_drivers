@@ -1,0 +1,31 @@
+Samuel Lichtenheld		
+
+This test case tests what happens if the user decides
+to open multiple files. I am testing this because 
+of the code located in the function e2_open:
+
+	if (devc->mode == MODE1) {
+	        devc->count1++;
+	        up(&devc->sem1);
+	        down_interruptible(&devc->sem2);
+	        return 0;
+	}
+
+As one can see, if the device is in mode 1 when it is 
+opened, sem2 will be downed. Sem2 does not get released
+in the function e2_open. Thus, this test checks what 
+happens if the user opens up multiple files. Since the 
+driver is initialized to to MODE1, if a user decides to
+open multiple files, there should be a deadlock. 
+
+The test case creates a deadlock scenario as expected. 
+
+Interestingly enough, if one uses ctrl-c to exit the
+deadlock scenario, this will cause the OS to call the 
+e2_release function multiple times, causing sem2 to get
+a value higher than one. Thus, the next time the test 
+is run, the program will open up one more file before 
+it deadlocks. 
+
+
+

@@ -1,0 +1,30 @@
+Samuel Lichtenheld		
+
+This test case tests what happens if the user decides
+to try to switch back to mode 1 after having an existing 
+file open in mode 2. The reason for testing this scenario
+is due to the code snippet below in in the e2_ioctl(...):
+
+	if (devc->count2 > 1) {
+		while (devc->count2 > 1) {
+			up(&devc->sem1);
+			wait_event_interruptible(devc->queue2, (devc->count2 == 1));
+			down_interruptible(&devc->sem1);
+		}
+	}
+
+
+
+As one can see, if 2 or more files are open in mode 2, 
+trying to switch back to mode 1 without closing at 
+least one of them will cause the current process to be
+sleeped. Another process (or thread) would have to call
+e2_release on one of these files, but this would require
+it to have access to those file descriptors. 
+
+The test case creates a deadlock scenario as expected. 
+
+
+
+
+

@@ -1,0 +1,20 @@
+Samuel Lichtenheld
+
+This testcase illustrates the issue of multiple 
+processes/threads attempting to open the device.
+If both processes/threads open the device before
+one of them has a chance to switch it to mode 2,
+one of the processes/threads will deadlock. 
+
+This is caused by the same underlying reason as 
+testcase 2:
+
+	if (devc->mode == MODE1) {
+	        devc->count1++;
+	        up(&devc->sem1);
+	        down_interruptible(&devc->sem2);
+	        return 0;
+	}
+
+where opening multiple devices in mode 1 will 
+lead to a deadlock. 
