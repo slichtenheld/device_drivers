@@ -1,5 +1,7 @@
 Samuel Lichtenheld		
 
+WARNING: MAY NEED SYSTEM REBOOT AFTER
+
 This test case tests what happens if the user decides
 to try to switch back to mode 1 after having an existing 
 file open in mode 2. The reason for testing this scenario
