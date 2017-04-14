@@ -115,6 +115,8 @@ static void usb_kbd_irq(struct urb *urb)
         struct usb_kbd *kbd = urb->context;
         int i;
 
+        printk(KERN_ALERT "RECEIVED: URB from int endpoint");
+
         switch (urb->status) {
         case 0:                 /* success */
                 break;
@@ -205,6 +207,8 @@ static void usb_kbd_led(struct urb *urb)
         unsigned long flags;
         struct usb_kbd *kbd = urb->context;
 
+        printk(KERN_ALERT "RECEIVED: URB from CTRL endpoint");
+
         if (urb->status)
                 hid_warn(urb->dev, "led urb status %d received\n",
                          urb->status);
@@ -232,6 +236,7 @@ static int usb_kbd_open(struct input_dev *dev)
 {
         struct usb_kbd *kbd = input_get_drvdata(dev);
 
+        printk(KERN_ALERT "OPENED: USB Keyboard device...");
         kbd->irq->dev = kbd->usbdev;
         if (usb_submit_urb(kbd->irq, GFP_KERNEL))
                 return -EIO;
@@ -242,6 +247,8 @@ static int usb_kbd_open(struct input_dev *dev)
 static void usb_kbd_close(struct input_dev *dev)
 {
         struct usb_kbd *kbd = input_get_drvdata(dev);
+
+        printk(KERN_ALERT "CLOSED: USB Keyboard device...");
 
         usb_kill_urb(kbd->irq);
 }
@@ -282,6 +289,7 @@ static int usb_kbd_probe(struct usb_interface *iface,
         int i, pipe, maxp;
         int error = -ENOMEM;
 
+        printk(KERN_ALERT "PROBING: usbkbd probing USB keyboard device..");
         interface = iface->cur_altsetting;
 
         if (interface->desc.bNumEndpoints != 1)
@@ -382,6 +390,8 @@ fail1:
 static void usb_kbd_disconnect(struct usb_interface *intf)
 {
         struct usb_kbd *kbd = usb_get_intfdata (intf);
+
+        printk(KERN_ALERT "Time to say bye to USB keyboard device..");
 
         usb_set_intfdata(intf, NULL);
         if (kbd) {
