@@ -1,0 +1,61 @@
+A lot of it is repetitious compared to the DDUSBKeyboardTesting ppt slides, but should hopefully clarify some things and help you get started. Also, what’s nice about using your laptop is if you screw up, your laptop keyboard still works fine :) Comment if anything didn’t work for you.
+
+NOTE: I have set this up on a laptop running Ubuntu using VirtualBox as my VM. I’m not sure how step 3 would work on Windows and whether this may cause any issues. 
+
+Create new Debian VM in VirtualBox
+http://cdimage.debian.org/debian-cd/current/amd64/iso-cd/
+You only need to download debian-8.7.1-amd64-CD-1.iso
+the rest can be installed over the internet (not sure if rest is actually needed)
+When setting up your vm, make sure to create a root password, not setting one up will not allow you to run “su” later, which is needed because sudo is not totally privileged in Debian
+download all of linux source, compile etc
+su
+apt-get install linux-source-3.2
+tar xjf /usr/src/linux-source-3.2.tar.bz2
+cd linux-source-3.2/
+install libncurses5-dev
+aptitude update
+aptitude install libncurses-dev
+make menuconfig
+don’t need to change anything here, just exit
+make clean
+apt-get install dpkg-dev
+make deb-pkg
+dpkg -I ../linux-image-3.2.86_3.2.86-2_amd64.deb
+doesn’t do anything, just displays you what you have
+shutdown -r now
+Make sure VB can see your USB devices
+shutdown your VM and VirtualBox
+On your host
+sudo usermod -aG vboxusers <username>
+logout/login or reboot
+Make host USB keyboard accessible by VirtualBox
+slide 17 of ppt
+Add your print statements to usbkbd.c
+linux-source-3.2/drivers/hid/usbhid/usbkbd.c
+Compile USBKBD module and insert (from linux-source-3.2 directory and as su)
+make SUBDIRS=drivers/hid/usbhid/ CONFIG_USB_KBD=m modules
+insmod drivers/hid/usbhid/usbkbd.ko
+lsmod | grep usbkbd
+usbkbd should be listed 
+ls -l /sys/bus/usb/drivers/usbkbd/
+compare to slide 15
+Who’s in charge?
+dmesg
+should see some info about the attached keyboard
+last line tells you which port your keyboard is using
+follow slide 23 to write your script to switch drivers
+*if on laptop, don’t have to worry about writing a script since your laptop’s keyboard will still work
+Test!
+ls -l /sys/bus/usb/drivers/usbkbd/
+should now list another device
+dmesg
+should see your print statements
+
+(Optional) Install other programs you like using, terminal can be found under Applications->Accessories
+git
+sudo apt-get update
+sudo apt-get install git-core
+sublime text
+wget http://c758482.r82.cf2.rackcdn.com/sublime-text_build-3083_amd64.deb
+sudo dpkg -i sublime-text_build-3083_amd64.deb
+
